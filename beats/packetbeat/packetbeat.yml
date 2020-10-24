@@ -1,0 +1,44 @@
+############################# Packetbeat ######################################
+packetbeat.interfaces.device: any
+
+packetbeat.flows:
+  timeout: 30s
+  period: 10s
+
+packetbeat.protocols.dns:
+  ports: [53]
+  include_authorities: true
+  include_additionals: true
+
+packetbeat.protocols.http:
+  ports: [9200, 5044, 9600, 5601, 5000, 5067, 5068, 5069, 5070, 5071]
+
+# ================================== Outputs ===================================
+output.elasticsearch:
+  enabled: true
+  hosts: ["localhost:9200"]
+  username: "elastic"
+  password: "changeme"
+
+# ================================= Dashboards =================================
+# setup.dashboards.enabled: true
+# setup.dashboards.directory: ${path.home}/kibana
+
+# =================================== Kibana ===================================
+setup.kibana:
+  host: "http://localhost:5601"
+  username: elastic
+  password: "changeme"
+
+# ================================== Template ==================================
+setup.template.enabled: true
+setup.template.overwrite: true
+setup.template.pattern: "packetbeat-*"
+setup.template.settings:
+  index.number_of_replicas: 0
+  index.number_of_shards: 1
+
+# =============================== HTTP Endpoint ================================
+monitoring.enabled: false
+http.enabled: true
+http.port: 5069

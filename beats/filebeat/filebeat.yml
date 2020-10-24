@@ -1,0 +1,33 @@
+############################# Filebeat ######################################
+filebeat.inputs:
+  - type: log
+    enabled: true
+    reload.enabled: true
+    paths:
+      - /logs/apache.log
+    exclude_files: ['\.gz$', '\.tar$']
+    fields:
+      log_type: apache
+    fields_under_root: true
+
+# ================================== Outputs ===================================
+output.logstash:
+  enabled: true
+  hosts: ["ls01:5044"]
+  username: "elastic"
+  password: "changeme"
+
+# ================================= Dashboards =================================
+# setup.dashboards.enabled: true
+# setup.dashboards.directory: ${path.home}/kibana
+
+# =================================== Kibana ===================================
+setup.kibana:
+  host: "http://kb01:5601"
+  username: elastic
+  password: "changeme"
+
+# =============================== HTTP Endpoint ================================
+monitoring.enabled: false
+http.enabled: true
+http.port: 5067

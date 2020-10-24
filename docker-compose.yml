@@ -1,0 +1,206 @@
+version: '3.8'
+
+
+services:
+  es01:
+    container_name: es01
+    restart: always
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.8.0
+    volumes:
+      - ./elk/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+    environment:
+      node.name: es01
+      ELASTIC_PASSWORD: changeme
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    networks:
+      - elk
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  ls01:
+    container_name: ls01
+    restart: always
+    image: docker.elastic.co/logstash/logstash:7.8.0
+    volumes:
+      - ./elk/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - ./elk/logstash/config/pipelines.yml:/usr/share/logstash/config/pipelines.yml:ro
+      - ./elk/logstash/pipelines:/usr/share/logstash/pipeline
+    command: "logstash"
+    ports:
+      - "5000:5000"
+      - "5044:5044"
+      - "9600:9600"
+    networks:
+      - elk
+    depends_on:
+      - es01
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail http://localhost:9600 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  kb01:
+    container_name: kb01
+    restart: always
+    image: docker.elastic.co/kibana/kibana:7.8.0
+    volumes:
+      - ./elk/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+    ports:
+      - "5601:5601"
+    networks:
+      - elk
+    depends_on:
+      - es01
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail http://localhost:5601/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+
+
+
+
+  fb01:
+    container_name: fb01
+    restart: always
+    image: docker.elastic.co/beats/filebeat:7.8.0
+    environment:
+      STRICT_PERMS: "false"
+    volumes:
+      - ./beats/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml
+      - ./assets/logs/:/logs
+    networks:
+      - elk
+    depends_on:
+      - ls01
+      - kb01
+    ports:
+      - "5067:5067"
+    healthcheck:
+      test: filebeat test config
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+
+  mb01:
+    container_name: mb01
+    restart: always
+    image: docker.elastic.co/beats/metricbeat:7.8.0
+    environment:
+      STRICT_PERMS: "false"
+    volumes:
+      - ./beats/metricbeat/metricbeat.yml:/usr/share/metricbeat/metricbeat.yml
+      - /var/run/docker.sock:/var/run/docker.sock
+      # - /proc:/hostfs/proc:ro
+      # - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
+      # - /:/hostfs:ro
+    networks:
+      - elk
+    depends_on:
+      - es01
+      - kb01
+    ports:
+      - "5068:5068"
+    healthcheck:
+      test: metricbeat test config
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  pb01:
+    container_name: pb01
+    restart: always
+    image: docker.elastic.co/beats/packetbeat:7.8.0
+    environment:
+      STRICT_PERMS: "false"
+    volumes:
+      - ./beats/packetbeat/packetbeat.yml:/usr/share/packetbeat/packetbeat.yml
+    cap_add: ['NET_RAW', 'NET_ADMIN']
+    network_mode: host
+    depends_on:
+      - es01
+      - kb01
+    ports:
+      - "5069:5069"
+    healthcheck:
+      test: packetbeat test config
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  ab01:
+    container_name: ab01
+    restart: always
+    image: docker.elastic.co/beats/auditbeat:7.8.0
+    command: auditbeat -e --strict.perms=false
+    pid: host
+    volumes:
+      - ./beats/auditbeat/auditbeat.yml:/usr/share/auditbeat/auditbeat.yml
+    cap_add: ['AUDIT_CONTROL', 'AUDIT_READ']
+    # network_mode: host
+    networks:
+      - elk
+    depends_on:
+      - es01
+      - kb01
+    ports:
+      - "5070:5070"
+    healthcheck:
+      test: auditbeat test config
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  hb01:
+    container_name: hb01
+    restart: always
+    image: docker.elastic.co/beats/heartbeat:7.8.0
+    environment:
+      STRICT_PERMS: "false"
+    volumes:
+      - ./beats/heartbeat/heartbeat.yml:/usr/share/heartbeat/heartbeat.yml
+    networks:
+      - elk
+    depends_on:
+      - es01
+      - kb01
+    ports:
+      - "5071:5071"
+    healthcheck:
+      test: heartbeat test config
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+
+
+
+  fl01:
+    container_name: fl01
+    restart: always
+    image: mingrammer/flog:0.4.2
+    volumes:
+      - ./assets/logs:/logs
+    command: -l -d 1 -f apache_common -t log -w -o /logs/apache.log
+
+
+
+
+networks:
+  elk:

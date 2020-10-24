@@ -1,0 +1,65 @@
+############################# Heartbeat ######################################
+heartbeat.monitors:
+- type: http
+  id: check_elastic
+  name: Elasticsearch Healthcheck
+  schedule: '*/5 * * * * * *'
+  timeout: 5s
+  urls: [ "http://es01:9200/_cluster/health" ]
+  username: "elastic"
+  password: "changeme"
+  check.request:
+    method: GET
+  check.response:
+    status: 200
+    json:
+      - description: status
+        condition:
+          or:
+            - equals: 
+                status: "green"
+            - equals:
+                status: "yellow"
+
+- type: http
+  id: check_kibana
+  name: Kibana Healthcheck
+  schedule: '*/5 * * * * * *'
+  timeout: 10s
+  wait: 1s
+  urls: [ "http://kb01:5601/api/status" ]
+  username: "elastic"
+  password: "changeme"
+  check.request:
+    method: GET
+  check.response:
+    status: 200
+    json:
+      - description: status
+        condition:
+          or:
+            - equals: 
+                status.overall.state: "green"
+            - equals:
+                status.overall.state: "yellow"
+
+# ================================== Outputs ===================================
+output.elasticsearch:
+  enabled: true
+  hosts: ["es01:9200"]
+  username: elastic
+  password: changeme
+
+# ================================== Template ==================================
+setup.template.enabled: true
+setup.template.overwrite: true
+setup.template.pattern: "heartbeat-*"
+setup.template.settings:
+  index.number_of_replicas: 0
+  index.number_of_shards: 1
+
+# =============================== HTTP Endpoint ================================
+monitoring.enabled: false
+http.enabled: true
+http.host: localhost
+http.port: 5071

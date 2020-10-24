@@ -1,0 +1,11 @@
+---
+cluster.name: "es-cluster"
+network.host: 0.0.0.0
+transport.host: 0.0.0.0
+discovery.type: single-node
+discovery.zen.minimum_master_nodes: 1
+
+xpack.security.enabled: true
+xpack.monitoring.collection.enabled: true
+xpack.monitoring.elasticsearch.collection.enabled: false
+xpack.license.self_generated.type: trial
