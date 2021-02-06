@@ -1,11 +1,11 @@
 ---
 cluster.name: "es-cluster"
 network.host: 0.0.0.0
-transport.host: 0.0.0.0
 discovery.type: single-node
-discovery.zen.minimum_master_nodes: 1
 
 xpack.security.enabled: true
-xpack.monitoring.collection.enabled: true
-xpack.monitoring.elasticsearch.collection.enabled: false
 xpack.license.self_generated.type: trial
+xpack.monitoring.collection.enabled: true
+
+# discovery.seed_hosts: [es01, es02, es03]
+# cluster.initial_master_nodes: [es01, es02, es03]

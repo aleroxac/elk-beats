@@ -1,2 +1,11 @@
+  - pipeline.id: beats
+    config.string: |
+      input { beats { port => 5044 } }
+      output {
+          if [log_type] =~ "apache" {
+            pipeline { send_to => apache_address }
+          }
+      }
+
   - pipeline.id: apache
     path.config: "/usr/share/logstash/pipeline/apache.conf"
